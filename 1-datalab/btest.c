@@ -525,7 +525,7 @@ static void usage(char *cmd) {
 
 int main(int argc, char *argv[])
 {
-    int errors;
+    // int errors;
     char c;
 
     /* parse command line args */
@@ -578,7 +578,7 @@ int main(int argc, char *argv[])
     }
 
     /* test each function */
-    errors = run_tests();
-
+    run_tests();
+	// errors = 0;
     return 0;
 }

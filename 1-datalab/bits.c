@@ -531,6 +531,79 @@ int float_f2i(unsigned uf) {
 unsigned float_half(unsigned uf) {
   unsigned sign = 0x80000000U;
   unsigned exp  = 0x7F800000U;
+  // unsigned frac = 0x007FFFFFU;
+  unsigned special = ((uf&exp)==exp);
+  // unsigned NaN = special && uf&frac;
+  // 1000 0000 0111 1111  1111 1111 1111 1111
+  //           0123 4567  8901 2345 6789 0123
+  unsigned e = (uf&exp) >> 23;
+  if (special) return uf;
+  if (e > 1) return uf - 0x00800000U;
+  sign = uf & sign;
+  uf = sign^uf;
+  uf = ((uf & uf >> 1)&1) + (uf>>1);
+  return uf+sign;
+
+}
+/* 
+ * float_i2f - Return bit-level equivalent of expression (float) x
+ *   Result is returned as unsigned int, but
+ *   it is to be interpreted as the bit-level representation of a
+ *   single-precision floating point values.
+ *   Legal ops: Any integer/unsigned operations incl. ||, &&. also if, while
+ *   Max ops: 30
+ *   Rating: 4
+ */
+unsigned float_i2f(int x) {
+  unsigned sign = 0x80000000U;
+  // unsigned exp  = 0x7F800000U;
+  unsigned frac = 0x007FFFFFU;
+  unsigned f,res,c=0, poi = 0;
+  unsigned offset=127+23;
+  if(x == 0) return 0;
+  if(x<0) x = -x; else sign = 0; 
+  f = x;
+  while(f <= frac){f=f<<1; offset = offset-1;}
+  while(f+c >= 0x01000000){poi=c|poi;c=f&1;f=f>>1;offset=offset+1;}
+  if(!poi) c = c & f;
+  f = f+c;
+  res = sign | offset<<23 | (frac&f); 
+  return res;
+}
+/* 
+ * float_neg - Return bit-level equivalent of expression -f for
+ *   floating point argument f.
+ *   Both the argument and result are passed as unsigned int's, but
+ *   they are to be interpreted as the bit-level representations of
+ *   single-precision floating point values.
+ *   When argument is NaN, return argument.
+ *   Legal ops: Any integer/unsigned operations incl. ||, &&. also if, while
+ *   Max ops: 10
+ *   Rating: 2
+ */
+unsigned float_neg(unsigned uf) {
+  unsigned sign = 0x80000000U;
+  unsigned exp  = 0x7F800000U;
+  unsigned frac = 0x007FFFFFU;
+  unsigned NaN = ((uf&exp)==exp) && uf&frac;
+  if (NaN) return uf;
+  else return  uf ^ sign;
+
+}
+/* 
+ * float_twice - Return bit-level equivalent of expression 2*f for
+ *   floating point argument f.
+ *   Both the argument and result are passed as unsigned int's, but
+ *   they are to be interpreted as the bit-level representation of
+ *   single-precision floating point values.
+ *   When argument is NaN, return argument
+ *   Legal ops: Any integer/unsigned operations incl. ||, &&. also if, while
+ *   Max ops: 30
+ *   Rating: 4
+ */
+unsigned float_twice(unsigned uf) {
+  unsigned sign = 0x80000000U;
+  unsigned exp  = 0x7F800000U;
   unsigned frac = 0x007FFFFFU;
   unsigned special = ((uf&exp)==exp);
   // unsigned NaN = special && uf&frac;
@@ -547,46 +620,6 @@ unsigned float_half(unsigned uf) {
   return uf;
 }
 /* 
- * float_i2f - Return bit-level equivalent of expression (float) x
- *   Result is returned as unsigned int, but
- *   it is to be interpreted as the bit-level representation of a
- *   single-precision floating point values.
- *   Legal ops: Any integer/unsigned operations incl. ||, &&. also if, while
- *   Max ops: 30
- *   Rating: 4
- */
-unsigned float_i2f(int x) {
-  return 2;
-}
-/* 
- * float_neg - Return bit-level equivalent of expression -f for
- *   floating point argument f.
- *   Both the argument and result are passed as unsigned int's, but
- *   they are to be interpreted as the bit-level representations of
- *   single-precision floating point values.
- *   When argument is NaN, return argument.
- *   Legal ops: Any integer/unsigned operations incl. ||, &&. also if, while
- *   Max ops: 10
- *   Rating: 2
- */
-unsigned float_neg(unsigned uf) {
- return 2;
-}
-/* 
- * float_twice - Return bit-level equivalent of expression 2*f for
- *   floating point argument f.
- *   Both the argument and result are passed as unsigned int's, but
- *   they are to be interpreted as the bit-level representation of
- *   single-precision floating point values.
- *   When argument is NaN, return argument
- *   Legal ops: Any integer/unsigned operations incl. ||, &&. also if, while
- *   Max ops: 30
- *   Rating: 4
- */
-unsigned float_twice(unsigned uf) {
-  return 2;
-}
-/* 
  * getByte - Extract byte n from word x
  *   Bytes numbered from 0 (LSB) to 3 (MSB)
  *   Examples: getByte(0x12345678,1) = 0x56
@@ -595,7 +628,8 @@ unsigned float_twice(unsigned uf) {
  *   Rating: 2
  */
 int getByte(int x, int n) {
-  return 2;
+  int ans = (x>>(n<<3)) & 0xFF;
+  return ans;
 }
 /* 
  * greatestBitPos - return a mask that marks the position of the
@@ -606,7 +640,12 @@ int getByte(int x, int n) {
  *   Rating: 4 
  */
 int greatestBitPos(int x) {
-  return 2;
+  x = (x >> 1) | x;
+  x = (x >> 2) | x;
+  x = (x >> 4) | x;
+  x = (x >> 8) | x;
+  x = (x >> 16) | x;
+  return x&( ((x+1)>>1) | (1<<31)) ;
 }
 /* howManyBits - return the minimum number of bits required to represent x in
  *             two's complement
@@ -621,7 +660,25 @@ int greatestBitPos(int x) {
  *  Rating: 4
  */
 int howManyBits(int x) {
-  return 0;
+  int x0 = x;
+  int count = 0;
+  int f;
+  f = ~!(((x<<16)>>16) ^ x) +1;
+  count = count + (16&f);
+  x = x0 << count;
+  f = ~!(((x<<8)>>8) ^ x) +1 ;
+  count = count + (8&f);
+  x = x0 << count;
+  f = ~!(((x<<4)>>4) ^ x) +1 ;
+  count = count + (4&f);
+  x = x0 << count;
+  f = ~!(((x<<2)>>2) ^ x) +1 ;
+  count = count + (2&f);
+  x = x0 << count;
+  f = ~!(((x<<1)>>1) ^ x) +1 ;
+  count = count + (1&f);
+  // x = x0 << count;
+  return 33 + ~count;
 }
 /*
  * ilog2 - return floor(log base 2 of x), where x > 0
@@ -631,7 +688,25 @@ int howManyBits(int x) {
  *   Rating: 4
  */
 int ilog2(int x) {
-  return 2;
+  int f, k, res=0;
+  f = x;
+  k = (!!(f >> 16)) << 4;
+  res = res + k;
+  f = f >> k;
+
+  k = (!!(f >> 8)) << 3;
+  res = res + k;
+  f = f >> k;
+
+  k = (!!(f >> 4)) << 2;
+  res = res + k;
+  f = f >> k;
+
+  k = (!!(f >> 2)) << 1;
+  res = res + k;
+  f = f >> k;
+  res = res + (f>>1);
+  return res;
 }
 /* 
  * implication - return x -> y in propositional logic - 0 for false, 1
@@ -643,7 +718,7 @@ int ilog2(int x) {
  *   Rating: 2
  */
 int implication(int x, int y) {
-    return 2;
+    return !!((!x)|y);
 }
 /* 
  * isAsciiDigit - return 1 if 0x30 <= x <= 0x39 (ASCII codes for characters '0' to '9')
@@ -655,7 +730,10 @@ int implication(int x, int y) {
  *   Rating: 3
  */
 int isAsciiDigit(int x) {
-  return 2;
+  int a = x >> 6;
+  int b = (x&0x30)^0x30;
+  int c = ((x+6)&0x30)^0x30;
+  return !(a|b|c);
 }
 /* 
  * isEqual - return 1 if x == y, and 0 otherwise 
@@ -665,7 +743,7 @@ int isAsciiDigit(int x) {
  *   Rating: 2
  */
 int isEqual(int x, int y) {
-  return 2;
+  return !(x^y);
 }
 /* 
  * isGreater - if x > y  then return 1, else return 0 
@@ -675,7 +753,13 @@ int isEqual(int x, int y) {
  *   Rating: 3
  */
 int isGreater(int x, int y) {
-  return 2;
+  int a,b,s,e, m;
+  a = (x>>31);
+  b = ~(y>>31);
+  s = (x + ~y + 1)>>31;
+  e = !(x^y);
+  m = s|e;
+  return !((a&b)|(a&m)|(b&m));
 }
 /* 
  * isLess - if x < y  then return 1, else return 0 
@@ -685,7 +769,13 @@ int isGreater(int x, int y) {
  *   Rating: 3
  */
 int isLess(int x, int y) {
-  return 2;
+  int a,b,s,e, m;
+  a = (x>>31);
+  b = ~(y>>31);
+  s = (x + ~y + 1)>>31;
+  e = 0;
+  m = s|e;
+  return ((a&b)|(a&m)|(b&m))&1;
 }
 /* 
  * isLessOrEqual - if x <= y  then return 1, else return 0 
@@ -695,7 +785,14 @@ int isLess(int x, int y) {
  *   Rating: 3
  */
 int isLessOrEqual(int x, int y) {
-  return 2;
+  int a,b,s,e, m;
+  a = (x>>31);
+  b = ~(y>>31);
+  s = (x + ~y + 1)>>31;
+  e = !(x^y);
+  m = s|e;
+  return ((a&b)|(a&m)|(b&m))&0x1;
+
 }
 /* 
  * isNegative - return 1 if x < 0, return 0 otherwise 
@@ -705,7 +802,7 @@ int isLessOrEqual(int x, int y) {
  *   Rating: 2
  */
 int isNegative(int x) {
-  return 2;
+  return (x>>31)&1;
 }
 /* 
  * isNonNegative - return 1 if x >= 0, return 0 otherwise 
@@ -715,7 +812,7 @@ int isNegative(int x) {
  *   Rating: 3
  */
 int isNonNegative(int x) {
-  return 2;
+  return !(x>>31);
 }
 /* 
  * isNonZero - Check whether x is nonzero using
@@ -726,7 +823,9 @@ int isNonNegative(int x) {
  *   Rating: 4 
  */
 int isNonZero(int x) {
-  return 2;
+  int a = x;
+  int b = x+~0;
+  return ((a|~b)>>31)&1;
 }
 /* 
  * isNotEqual - return 0 if x == y, and 1 otherwise 
@@ -736,7 +835,7 @@ int isNonZero(int x) {
  *   Rating: 2
  */
 int isNotEqual(int x, int y) {
-  return 2;
+  return !!(x^y);
 }
 /* 
  * isPositive - return 1 if x > 0, return 0 otherwise 
@@ -746,7 +845,7 @@ int isNotEqual(int x, int y) {
  *   Rating: 3
  */
 int isPositive(int x) {
-  return 2;
+  return !((x>>31) | !x);
 }
 /*
  * isPower2 - returns 1 if x is a power of 2, and 0 otherwise
