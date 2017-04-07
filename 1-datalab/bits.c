@@ -314,8 +314,8 @@ int bitCount(int x) {
  *   Rating: 3
  */
 int bitMask(int highbit, int lowbit) {
-  int hm = (2 << highbit) + ~1;
-  int lm = (1 << lowbit) + ~1;
+  int hm = (2 << highbit) + ~0;
+  int lm = (1 << lowbit) + ~0;
   
   return hm & (~lm);
 }
@@ -327,7 +327,7 @@ int bitMask(int highbit, int lowbit) {
  *   Rating: 1
  */
 int bitNor(int x, int y) {
-  return 2;
+  return ~x & ~y;
 }
 /* 
  * bitOr - x|y using only ~ and & 
@@ -337,7 +337,7 @@ int bitNor(int x, int y) {
  *   Rating: 1
  */
 int bitOr(int x, int y) {
-  return 2;
+  return ~(~x&~y);
 }
 /*
  * bitParity - returns 1 if x contains an odd number of 0's
@@ -347,7 +347,12 @@ int bitOr(int x, int y) {
  *   Rating: 4
  */
 int bitParity(int x) {
-  return 2;
+  x = (x>>16) ^ x;
+  x = (x>>8) ^ x;
+  x = (x>>4) ^ x;
+  x = (x>>2) ^ x;
+  x = (x>>1) ^ x;
+  return x&1;
 }
 /* 
  * bitXor - x^y using only ~ and & 
@@ -357,7 +362,7 @@ int bitParity(int x) {
  *   Rating: 1
  */
 int bitXor(int x, int y) {
-  return 2;
+  return ~(x&y)&~(~x&~y);
 }
 /* 
  * byteSwap - swaps the nth byte and the mth byte
@@ -369,7 +374,12 @@ int bitXor(int x, int y) {
  *  Rating: 2
  */
 int byteSwap(int x, int n, int m) {
-    return 2;
+  int a = n << 3;
+  int b = m << 3;
+  int tmp = 0xFF & ((x>>a) ^ (x>>b));
+  x = (tmp << a) ^ x;
+  x = (tmp << b) ^ x;
+  return x;
 }
 /* 
  * conditional - same as x ? y : z 
@@ -379,7 +389,8 @@ int byteSwap(int x, int n, int m) {
  *   Rating: 3
  */
 int conditional(int x, int y, int z) {
-  return 2;
+  x = (!x) - 1;
+  return (x&y) | (z&~x);
 }
 /* 
  * copyLSB - set all bits of result to least significant bit of x
@@ -389,7 +400,7 @@ int conditional(int x, int y, int z) {
  *   Rating: 2
  */
 int copyLSB(int x) {
-  return 2;
+  return (x<<31)>>31;
 }
 /* 
  * divpwr2 - Compute x/(2^n), for 0 <= n <= 30
