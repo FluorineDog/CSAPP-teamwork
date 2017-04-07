@@ -172,7 +172,8 @@ NOTES:
  *   Rating: 4
  */
 int absVal(int x) {
-  return 2;
+    int y = x >> 31;
+    return y ^ (x + y);
 }
 /* 
  * addOK - Determine if can compute x+y without overflow
@@ -183,7 +184,11 @@ int absVal(int x) {
  *   Rating: 3
  */
 int addOK(int x, int y) {
-  return 2;
+    int z = x + y;
+    int sx = x >> 31;
+    int sy = y >> 31;
+    int sz = z >> 31;
+    return !(~(sx ^ sy) & (sx ^ sz));
 }
 /* 
  * allEvenBits - return 1 if all even-numbered bits in word set to 1
@@ -193,7 +198,9 @@ int addOK(int x, int y) {
  *   Rating: 2
  */
 int allEvenBits(int x) {
-  return 2;
+    int y = 0x55 << 8 | 0x55;
+    int z = y << 16 | y;
+    return !((x & z) ^ z);
 }
 /* 
  * allOddBits - return 1 if all odd-numbered bits in word set to 1
@@ -203,7 +210,9 @@ int allEvenBits(int x) {
  *   Rating: 2
  */
 int allOddBits(int x) {
-  return 2;
+    int y = 0xaa << 8 | 0xaa;
+    int z = y << 16 | y;
+    return !((x & z) ^ z);
 }
 /* 
  * anyEvenBit - return 1 if any even-numbered bit in word set to 1
@@ -213,7 +222,9 @@ int allOddBits(int x) {
  *   Rating: 2
  */
 int anyEvenBit(int x) {
-  return 2;
+    int y = 0x55 << 8 | 0x55;
+    int z = y << 16 | y;
+    return !!(x & z);
 }
 /* 
  * anyOddBit - return 1 if any odd-numbered bit in word set to 1
@@ -223,7 +234,9 @@ int anyEvenBit(int x) {
  *   Rating: 2
  */
 int anyOddBit(int x) {
-    return 2;
+    int y = 0xaa << 8 | 0xaa;
+    int z = y << 16 | y;
+    return !!(x & z);
 }
 /* 
  * bang - Compute !x without using !
@@ -233,7 +246,7 @@ int anyOddBit(int x) {
  *   Rating: 4 
  */
 int bang(int x) {
-  return 2;
+    return ~((~x + 1) | x) >> 31 & 1;
 }
 /* 
  * bitAnd - x&y using only ~ and | 
@@ -243,7 +256,7 @@ int bang(int x) {
  *   Rating: 1
  */
 int bitAnd(int x, int y) {
-  return 2;
+    return ~(~x | ~y);
 }
 /*
  * bitCount - returns count of number of 1's in word
@@ -253,7 +266,20 @@ int bitAnd(int x, int y) {
  *   Rating: 4
  */
 int bitCount(int x) {
-  return 2;
+    int s = x >> 31;
+    int y1 = 0x55 << 8 | 0x55;
+    int z1 = y1 << 16 | y1;
+    int y2 = 0x33 << 8 | 0x33;
+    int z2 = y2 << 16 | y2;
+    int y3 = 0x0f << 8 | 0x0f;
+    int z3 = y3 << 16 | y3;
+    x = x ^ (s << 31);
+    x = (x & z1) + ((x >> 1) & z1);
+    x = (x & z2) + ((x >> 2) & z2);
+    x = (x + (x >> 4)) & z3;
+    x = x + (x >> 8);
+    x = x + (x >> 16);
+    return (x & 0xff) + (s & 1);
 }
 /* 
  * bitMask - Generate a mask consisting of all 1's 
@@ -266,7 +292,10 @@ int bitCount(int x) {
  *   Rating: 3
  */
 int bitMask(int highbit, int lowbit) {
-  return 2;
+    int m1 = ~0;
+    int hi = (2 << highbit) + m1;
+    int lo = (1 << lowbit) + m1;
+    return hi & ~lo;
 }
 /* 
  * bitNor - ~(x|y) using only ~ and & 
@@ -276,7 +305,7 @@ int bitMask(int highbit, int lowbit) {
  *   Rating: 1
  */
 int bitNor(int x, int y) {
-  return 2;
+    return ~x & ~y;
 }
 /* 
  * bitOr - x|y using only ~ and & 
@@ -286,7 +315,7 @@ int bitNor(int x, int y) {
  *   Rating: 1
  */
 int bitOr(int x, int y) {
-  return 2;
+    return ~(~x & ~y);
 }
 /*
  * bitParity - returns 1 if x contains an odd number of 0's
@@ -296,7 +325,12 @@ int bitOr(int x, int y) {
  *   Rating: 4
  */
 int bitParity(int x) {
-  return 2;
+    x = x ^ (x >> 16);
+    x = x ^ (x >> 8);
+    x = x ^ (x >> 4);
+    x = x ^ (x >> 2);
+    x = x ^ (x >> 1);
+    return x & 1;
 }
 /* 
  * bitXor - x^y using only ~ and & 
@@ -306,7 +340,7 @@ int bitParity(int x) {
  *   Rating: 1
  */
 int bitXor(int x, int y) {
-  return 2;
+    return ~(~(~x & y) & ~(~y & x));
 }
 /* 
  * byteSwap - swaps the nth byte and the mth byte
@@ -318,7 +352,11 @@ int bitXor(int x, int y) {
  *  Rating: 2
  */
 int byteSwap(int x, int n, int m) {
-    return 2;
+    int y;
+    n = n << 3;
+    m = m << 3;
+    y = ((x >> n) ^ (x >> m)) & 0xff;
+    return x ^ (y << n | y << m);
 }
 /* 
  * conditional - same as x ? y : z 
@@ -328,7 +366,8 @@ int byteSwap(int x, int n, int m) {
  *   Rating: 3
  */
 int conditional(int x, int y, int z) {
-  return 2;
+    int s = !x << 31 >> 31;
+    return (s & z) | (~s & y);
 }
 /* 
  * copyLSB - set all bits of result to least significant bit of x
@@ -338,7 +377,7 @@ int conditional(int x, int y, int z) {
  *   Rating: 2
  */
 int copyLSB(int x) {
-  return 2;
+    return x << 31 >> 31;
 }
 /* 
  * divpwr2 - Compute x/(2^n), for 0 <= n <= 30
@@ -349,7 +388,7 @@ int copyLSB(int x) {
  *   Rating: 2
  */
 int divpwr2(int x, int n) {
-    return 2;
+    return (x + (x >> 31 & ~(~0 << n))) >> n;
 }
 /* 
  * evenBits - return word with all even-numbered bits set to 1
@@ -358,7 +397,8 @@ int divpwr2(int x, int n) {
  *   Rating: 1
  */
 int evenBits(void) {
-  return 2;
+    int x = 0x55 << 8 | 0x55;
+    return x << 16 | x;
 }
 /*
  * ezThreeFourths - multiplies by 3/4 rounding toward 0,
@@ -372,7 +412,8 @@ int evenBits(void) {
  *   Rating: 3
  */
 int ezThreeFourths(int x) {
-  return 2;
+    x = (x << 1) + x;
+    return (x + (x >> 31 & 0x03)) >> 2;
 }
 /* 
  * fitsBits - return 1 if x can be represented as an 
@@ -384,7 +425,8 @@ int ezThreeFourths(int x) {
  *   Rating: 2
  */
 int fitsBits(int x, int n) {
-  return 2;
+    int y = x >> (n + ~0);
+    return !y | !~y;
 }
 /* 
  * fitsShort - return 1 if x can be represented as a 
@@ -395,7 +437,8 @@ int fitsBits(int x, int n) {
  *   Rating: 1
  */
 int fitsShort(int x) {
-  return 2;
+    int y = x >> 15;
+    return !y | !~y;
 }
 /* 
  * float_abs - Return bit-level equivalent of absolute value of f for
@@ -409,7 +452,8 @@ int fitsShort(int x) {
  *   Rating: 2
  */
 unsigned float_abs(unsigned uf) {
-  return 2;
+    unsigned y = (uf << 1 >> 24 ^ 0xff) | !(uf << 9);
+    return y ? uf << 1 >> 1 : uf;
 }
 /* 
  * float_f2i - Return bit-level equivalent of expression (int) f
@@ -424,7 +468,14 @@ unsigned float_abs(unsigned uf) {
  *   Rating: 4
  */
 int float_f2i(unsigned uf) {
-  return 2;
+    unsigned s = uf >> 31;
+    unsigned e = uf >> 23 & 0xff;
+    if (e > 157)
+        return 0x80000000;
+    if (!e || e < 127)
+        return 0;
+    uf = (uf << 8 | 1 << 31) >> (158 - e); 
+    return s ? -uf : uf;
 }
 /* 
  * float_half - Return bit-level equivalent of expression 0.5*f for
@@ -438,7 +489,18 @@ int float_f2i(unsigned uf) {
  *   Rating: 4
  */
 unsigned float_half(unsigned uf) {
-  return 2;
+    unsigned s = uf >> 31 << 31;
+    unsigned e = uf >> 23 & 0xff;
+    unsigned p = uf << 9 >> 9;
+    unsigned q = p >> 1;
+    unsigned r = q + (q & p & 1);
+    if (e == 0xff)
+        return uf;
+    if (!e)
+        return s | r;
+    if (e == 1)
+        return s | 1 << 22 | r;
+    return s | (e - 1) << 23 | p;
 }
 /* 
  * float_i2f - Return bit-level equivalent of expression (float) x
@@ -450,7 +512,30 @@ unsigned float_half(unsigned uf) {
  *   Rating: 4
  */
 unsigned float_i2f(int x) {
-  return 2;
+    unsigned s, e, f, p, q;
+    if (!x)
+        return 0;
+    s = x >> 31;
+    p = (x + s) ^ s;
+    f = 127;
+    while (!(p & 1)) {
+        ++f;
+        p >>= 1;
+    }
+    e = 0;
+    while ((1 << e) <= p)
+        ++e;
+    --e;
+    q = p << (32 - e);
+    p = q >> 8;
+    q = (p << 8) == q ? p >> 1 : 1;
+    p = (p + (q & p & 1)) >> 1;
+    q = 1 << 23;
+    if (p & q) {
+        ++e;
+        p ^= q;
+    }
+    return s << 31 | (e + f) << 23 | p;
 }
 /* 
  * float_neg - Return bit-level equivalent of expression -f for
@@ -464,7 +549,11 @@ unsigned float_i2f(int x) {
  *   Rating: 2
  */
 unsigned float_neg(unsigned uf) {
- return 2;
+    unsigned s = uf >> 23 & 0xff;
+    unsigned p = uf << 9 >> 9;
+    if (p && s == 0xff)
+        return uf;
+    return uf ^ 1 << 31;
 }
 /* 
  * float_twice - Return bit-level equivalent of expression 2*f for
@@ -478,7 +567,17 @@ unsigned float_neg(unsigned uf) {
  *   Rating: 4
  */
 unsigned float_twice(unsigned uf) {
-  return 2;
+    unsigned s = uf >> 31 << 31;
+    unsigned e = uf >> 23 & 0xff;
+    unsigned p = uf << 9 >> 9;
+    unsigned q = p << 10 >> 9;
+    if (e == 0xff)
+        return uf;
+    if (!(uf << 1))
+        return uf;
+    if (!e)
+        return s | (p & 1 << 22) << 1 | q;
+    return s | (e + 1) << 23 | p;
 }
 /* 
  * getByte - Extract byte n from word x
@@ -489,7 +588,7 @@ unsigned float_twice(unsigned uf) {
  *   Rating: 2
  */
 int getByte(int x, int n) {
-  return 2;
+    return (x >> (n << 3)) & 0xff;
 }
 /* 
  * greatestBitPos - return a mask that marks the position of the
@@ -500,7 +599,22 @@ int getByte(int x, int n) {
  *   Rating: 4 
  */
 int greatestBitPos(int x) {
-  return 2;
+    int t = !x;
+    int s = !!(x >> 16);
+    int z = 1 << (s << 4);
+    x = x >> (s << 4) & (0xff << 8 | 0xff);
+    s = !!(x >> 8);
+    z = z << (s << 3);
+    x = x >> (s << 3);
+    s = !!(x >> 4);
+    z = z << (s << 2);
+    x = x >> (s << 2);
+    s = !!(x >> 2);
+    z = z << (s << 1);
+    x = x >> (s << 1);
+    s = !!(x >> 1);
+    z = z << s;
+    return z ^ t;
 }
 /* howManyBits - return the minimum number of bits required to represent x in
  *             two's complement
@@ -515,7 +629,29 @@ int greatestBitPos(int x) {
  *  Rating: 4
  */
 int howManyBits(int x) {
-  return 0;
+    int y = x >> 16;
+    int s = !(!~y | !y) << 4;
+    int z = s;
+    x = x >> s;
+    y = x >> 8;
+    s = !(!~y | !y) << 3;
+    z = z + s;
+    x = x >> s;
+    y = x >> 4;
+    s = !(!~y | !y) << 2;
+    z = z + s;
+    x = x >> s;
+    y = x >> 2;
+    s = !(!~y | !y) << 1;
+    z = z + s;
+    x = x >> s;
+    y = x >> 1;
+    s = !(!~y | !y);
+    z = z + s;
+    x = x >> s;
+    s = !(!~x | !x);
+    z = z + s;
+    return z + 1;
 }
 /*
  * ilog2 - return floor(log base 2 of x), where x > 0
@@ -525,7 +661,26 @@ int howManyBits(int x) {
  *   Rating: 4
  */
 int ilog2(int x) {
-  return 2;
+    int y = x >> 16;
+    int s = !!y << 4;
+    int z = s;
+    x = x >> s;
+    y = x >> 8;
+    s = !!y << 3;
+    z = z + s;
+    x = x >> s;
+    y = x >> 4;
+    s = !!y << 2;
+    z = z + s;
+    x = x >> s;
+    y = x >> 2;
+    s = !!y << 1;
+    z = z + s;
+    x = x >> s;
+    y = x >> 1;
+    s = !!y;
+    z = z + s;
+    return z;
 }
 /* 
  * implication - return x -> y in propositional logic - 0 for false, 1
@@ -537,7 +692,7 @@ int ilog2(int x) {
  *   Rating: 2
  */
 int implication(int x, int y) {
-    return 2;
+    return (!x) | y;
 }
 /* 
  * isAsciiDigit - return 1 if 0x30 <= x <= 0x39 (ASCII codes for characters '0' to '9')
@@ -549,7 +704,7 @@ int implication(int x, int y) {
  *   Rating: 3
  */
 int isAsciiDigit(int x) {
-  return 2;
+    return (!(x >> 4 ^ 0x3)) & (!(x & 0x08) | !(x & 0x06));
 }
 /* 
  * isEqual - return 1 if x == y, and 0 otherwise 
@@ -559,7 +714,7 @@ int isAsciiDigit(int x) {
  *   Rating: 2
  */
 int isEqual(int x, int y) {
-  return 2;
+    return !(x ^ y);
 }
 /* 
  * isGreater - if x > y  then return 1, else return 0 
@@ -569,7 +724,13 @@ int isEqual(int x, int y) {
  *   Rating: 3
  */
 int isGreater(int x, int y) {
-  return 2;
+    int m, n, p, z;
+    m = x >> 31;
+    n = y >> 31;
+    x = ~x + 1;
+    z = x + y;
+    p = z >> 31;
+    return (((m ^ n) & (n ^ p)) ^ p) & 1;
 }
 /* 
  * isLess - if x < y  then return 1, else return 0 
@@ -579,7 +740,13 @@ int isGreater(int x, int y) {
  *   Rating: 3
  */
 int isLess(int x, int y) {
-  return 2;
+    int m, n, p, z;
+    m = x >> 31;
+    n = y >> 31;
+    y = ~y + 1;
+    z = x + y;
+    p = z >> 31;
+    return (((m ^ n) & (m ^ p)) ^ p) & 1;
 }
 /* 
  * isLessOrEqual - if x <= y  then return 1, else return 0 
@@ -589,7 +756,13 @@ int isLess(int x, int y) {
  *   Rating: 3
  */
 int isLessOrEqual(int x, int y) {
-  return 2;
+    int m, n, p, z;
+    m = x >> 31;
+    n = y >> 31;
+    x = ~x + 1;
+    z = x + y;
+    p = z >> 31;
+    return !(((m ^ n) & (n ^ p)) ^ p);
 }
 /* 
  * isNegative - return 1 if x < 0, return 0 otherwise 
@@ -599,7 +772,7 @@ int isLessOrEqual(int x, int y) {
  *   Rating: 2
  */
 int isNegative(int x) {
-  return 2;
+    return x >> 31 & 1;
 }
 /* 
  * isNonNegative - return 1 if x >= 0, return 0 otherwise 
@@ -609,7 +782,7 @@ int isNegative(int x) {
  *   Rating: 3
  */
 int isNonNegative(int x) {
-  return 2;
+    return !(x >> 31);
 }
 /* 
  * isNonZero - Check whether x is nonzero using
@@ -620,7 +793,7 @@ int isNonNegative(int x) {
  *   Rating: 4 
  */
 int isNonZero(int x) {
-  return 2;
+    return (((~x + 1) | x) >> 31) & 1;
 }
 /* 
  * isNotEqual - return 0 if x == y, and 1 otherwise 
@@ -630,7 +803,7 @@ int isNonZero(int x) {
  *   Rating: 2
  */
 int isNotEqual(int x, int y) {
-  return 2;
+     return !!(x ^ y);
 }
 /* 
  * isPositive - return 1 if x > 0, return 0 otherwise 
@@ -640,7 +813,7 @@ int isNotEqual(int x, int y) {
  *   Rating: 3
  */
 int isPositive(int x) {
-  return 2;
+    return !((!x) | x >> 31);
 }
 /*
  * isPower2 - returns 1 if x is a power of 2, and 0 otherwise
@@ -651,7 +824,7 @@ int isPositive(int x) {
  *   Rating: 4
  */
 int isPower2(int x) {
-  return 2;
+    return !((x ^ (x & (~x + 1))) | x >> 31 | !x);
 }
 /*
  * isTmax - returns 1 if x is the maximum, two's complement number,
@@ -661,7 +834,8 @@ int isPower2(int x) {
  *   Rating: 1
  */
 int isTmax(int x) {
-  return 2;
+    x = x + 1;
+    return !(((~x + 1) ^ x) | !x);
 }
 /*
  * isTmin - returns 1 if x is the minimum, two's complement number,
@@ -671,7 +845,7 @@ int isTmax(int x) {
  *   Rating: 1
  */
 int isTmin(int x) {
-  return 2;
+    return !(((~x + 1) ^ x) | !x);
 }
 /*
  * isZero - returns 1 if x == 0, and 0 otherwise 
@@ -681,7 +855,7 @@ int isTmin(int x) {
  *   Rating: 1
  */
 int isZero(int x) {
-  return 2;
+    return !x;
 }
 /* 
  * leastBitPos - return a mask that marks the position of the
@@ -692,7 +866,7 @@ int isZero(int x) {
  *   Rating: 2 
  */
 int leastBitPos(int x) {
-  return 2;
+    return x & (~x + 1);
 }
 /*
  * leftBitCount - returns count of number of consective 1's in
@@ -703,7 +877,27 @@ int leastBitPos(int x) {
  *   Rating: 4
  */
 int leftBitCount(int x) {
-  return 2;
+    int y = x >> 16;
+    int s = !~y;
+    int z = s << 4;
+    x = x >> (!s << 4);
+    y = x >> 8;
+    s = !~y;
+    z = z + (s << 3);
+    x = x >> (!s << 3);
+    y = x >> 4;
+    s = !~y;
+    z = z + (s << 2);
+    x = x >> (!s << 2);
+    y = x >> 2;
+    s = !~y;
+    z = z + (s << 1);
+    x = x >> (!s << 1);
+    y = x >> 1;
+    s = !~y;
+    z = z + s;
+    x = x >> !s;
+    return z + (x & 1);
 }
 /* 
  * logicalNeg - implement the ! operator, using all of 
@@ -714,7 +908,7 @@ int leftBitCount(int x) {
  *   Rating: 4 
  */
 int logicalNeg(int x) {
-  return 2;
+    return ((x | (~x + 1)) >> 31 & 1) ^ 1;
 }
 /* 
  * logicalShift - shift x to the right by n, using a logical shift
@@ -725,7 +919,7 @@ int logicalNeg(int x) {
  *   Rating: 3 
  */
 int logicalShift(int x, int n) {
-  return 2;
+    return x >> n ^ x >> 31 << 31 >> n << 1;
 }
 /* 
  * minusOne - return a value of -1 
@@ -734,7 +928,7 @@ int logicalShift(int x, int n) {
  *   Rating: 1
  */
 int minusOne(void) {
-  return 2;
+    return ~0;
 }
 /*
  * multFiveEighths - multiplies by 5/8 rounding toward 0.
@@ -748,7 +942,8 @@ int minusOne(void) {
  *   Rating: 3
  */
 int multFiveEighths(int x) {
-  return 2;
+    x = (x << 2) + x;
+    return (x + (x >> 31 & 0x07)) >> 3;
 }
 /* 
  * negate - return -x 
@@ -758,7 +953,7 @@ int multFiveEighths(int x) {
  *   Rating: 2
  */
 int negate(int x) {
-  return 2;
+    return ~x + 1;
 }
 /* 
  * oddBits - return word with all odd-numbered bits set to 1
@@ -767,7 +962,8 @@ int negate(int x) {
  *   Rating: 2
  */
 int oddBits(void) {
-  return 2;
+    int y = 0xaa << 8 | 0xaa;
+    return y << 16 | y;
 }
 /* 
  * rempwr2 - Compute x%(2^n), for 0 <= n <= 30
@@ -778,7 +974,7 @@ int oddBits(void) {
  *   Rating: 3
  */
 int rempwr2(int x, int n) {
-    return 2;
+    return x + ~((x + (x >> 31 & ~(~0 << n))) >> n << n) + 1;
 }
 /* 
  * replaceByte(x,n,c) - Replace byte n in x with c
@@ -790,7 +986,8 @@ int rempwr2(int x, int n) {
  *   Rating: 3
  */
 int replaceByte(int x, int n, int c) {
-  return 2;
+    int m = n << 3;
+    return x ^ ((x >> m & 0xff) ^ c) << m;
 }
 /* 
  * rotateLeft - Rotate x to the left by n
@@ -801,7 +998,8 @@ int replaceByte(int x, int n, int c) {
  *   Rating: 3 
  */
 int rotateLeft(int x, int n) {
-  return 2;
+    int m = ~n + 33;
+    return x << n | (x >> m ^ x >> 31 << 31 >> m << 1);
 }
 /* 
  * rotateRight - Rotate x to the right by n
@@ -812,7 +1010,8 @@ int rotateLeft(int x, int n) {
  *   Rating: 3 
  */
 int rotateRight(int x, int n) {
-  return 2;
+    int m = ~n + 33;
+    return x << m | (x >> n ^ x >> 31 << 31 >> n << 1);
 }
 /*
  * satAdd - adds two numbers but when positive overflow occurs, returns
@@ -825,7 +1024,12 @@ int rotateRight(int x, int n) {
  *   Rating: 4
  */
 int satAdd(int x, int y) {
-  return 2;
+    int m = x >> 31;
+    int n = y >> 31;
+    int z = x + y;
+    int p = z >> 31;
+    int o = (m ^ n) | ~(m ^ p);
+    return (o & z) | (~o & ((1 << 31) + (~m & ~n)));
 }
 /*
  * satMul2 - multiplies by 2, saturating to Tmin or Tmax if overflow
@@ -837,7 +1041,9 @@ int satAdd(int x, int y) {
  *   Rating: 3
  */
 int satMul2(int x) {
-  return 2;
+    int y = x << 1;
+    int s = (x ^ y) >> 31;
+    return (~s & y) | (s & ((1 << 31) + (~x >> 31)));
 }
 /*
  * satMul3 - multiplies by 3, saturating to Tmin or Tmax if overflow
@@ -851,7 +1057,10 @@ int satMul2(int x) {
  *  Rating: 3
  */
 int satMul3(int x) {
-    return 2;
+    int y = x << 1;
+    int z = x + y;
+    int s = ((x ^ y) | (x ^ z)) >> 31;
+    return (~s & z) | (s & ((1 << 31) + (~x >> 31)));
 }
 /* 
  * sign - return 1 if positive, 0 if zero, and -1 if negative
@@ -862,7 +1071,7 @@ int satMul3(int x) {
  *  Rating: 2
  */
 int sign(int x) {
-    return 2;
+    return x >> 31 | !!x;
 }
 /* 
  * sm2tc - Convert from sign-magnitude to two's complement
@@ -873,7 +1082,8 @@ int sign(int x) {
  *   Rating: 4
  */
 int sm2tc(int x) {
-  return 2;
+    int s = x >> 31;
+    return ((x ^ s << 31) + s) ^ s;
 }
 /* 
  * subOK - Determine if can compute x-y without overflow
@@ -884,7 +1094,13 @@ int sm2tc(int x) {
  *   Rating: 3
  */
 int subOK(int x, int y) {
-  return 2;
+    int m, n, p, z;
+    y = ~y + 1;
+    m = x >> 31;
+    n = y >> 31 ^ !(y ^ 1 << 31) << 31 >> 31;
+    z = x + y;
+    p = z >> 31;
+    return ((m ^ n) | ~(m ^ p)) & 1;
 }
 /* 
  * tc2sm - Convert from two's complement to sign-magnitude 
@@ -896,7 +1112,8 @@ int subOK(int x, int y) {
  *   Rating: 4
  */
 int tc2sm(int x) {
-  return 2;
+    int s = x >> 31;
+    return s << 31 | ((x + s) ^ s);
 }
 /* 
  * thirdBits - return word with every third bit (starting from the LSB) set to 1
@@ -905,7 +1122,8 @@ int tc2sm(int x) {
  *   Rating: 1
  */
 int thirdBits(void) {
-  return 2;
+    int y = 0x49 << 9 | 0x49;
+    return y << 18 | y;
 }
 /* 
  * TMax - return maximum two's complement integer 
@@ -914,7 +1132,7 @@ int thirdBits(void) {
  *   Rating: 1
  */
 int tmax(void) {
-  return 2;
+    return ~(1 << 31);
 }
 /* 
  * tmin - return minimum two's complement integer 
@@ -923,7 +1141,7 @@ int tmax(void) {
  *   Rating: 1
  */
 int tmin(void) {
-  return 2;
+    return 1 << 31;
 }
 /*
  * trueFiveEighths - multiplies by 5/8 rounding toward 0,
@@ -937,7 +1155,10 @@ int tmin(void) {
  */
 int trueFiveEighths(int x)
 {
-    return 2;
+    int y = (x + (x >> 31 & 0x07)) >> 3;
+    int z = x + ~(y << 3) + 1;
+    z = (z << 2) + z;
+    return ((y << 2) + y) + ((z + (z >> 31 & 0x07)) >> 3);
 }
 /*
  * trueThreeFourths - multiplies by 3/4 rounding toward 0,
@@ -951,7 +1172,10 @@ int trueFiveEighths(int x)
  */
 int trueThreeFourths(int x)
 {
-  return 2;
+    int y = (x + (x >> 31 & 0x03)) >> 2;
+    int z = x + ~(y << 2) + 1;
+    z = (z << 1) + z;
+    return ((y << 1) + y) + ((z + (z >> 31 & 0x03)) >> 2);
 }
 /* 
  * upperBits - pads n upper bits with 1's
@@ -962,5 +1186,6 @@ int trueThreeFourths(int x)
  *  Rating: 1
  */
 int upperBits(int n) {
-  return 2;
+  return n >> 5 << 31 >> 31 | 1 << 31 >> n << 1;
 }
+
