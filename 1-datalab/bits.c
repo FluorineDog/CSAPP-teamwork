@@ -389,7 +389,7 @@ int byteSwap(int x, int n, int m) {
  *   Rating: 3
  */
 int conditional(int x, int y, int z) {
-  x = (!x) - 1;
+  x = (!x) + ~0;
   return (x&y) | (z&~x);
 }
 /* 
@@ -411,7 +411,10 @@ int copyLSB(int x) {
  *   Rating: 2
  */
 int divpwr2(int x, int n) {
-    return 2;
+  int f,s;
+  f = ~x+1; // special case handling: 0x80000000
+  s = f >> 31;
+  return ~f+1;
 }
 /* 
  * evenBits - return word with all even-numbered bits set to 1
@@ -420,7 +423,10 @@ int divpwr2(int x, int n) {
  *   Rating: 1
  */
 int evenBits(void) {
-  return 2;
+  int z = 0x55;
+  z = (z << 8) | z;
+  z = (z << 16) | z;
+  return z;
 }
 /*
  * ezThreeFourths - multiplies by 3/4 rounding toward 0,
@@ -434,7 +440,11 @@ int evenBits(void) {
  *   Rating: 3
  */
 int ezThreeFourths(int x) {
-  return 2;
+  int f, fn;
+  x = x+x+x;
+  fn = x >> 31;
+  f = ~x+1;
+  return ((x+f)>>2)+fn;
 }
 /* 
  * fitsBits - return 1 if x can be represented as an 
