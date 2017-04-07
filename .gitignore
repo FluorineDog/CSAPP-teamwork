@@ -1,4 +1,5 @@
 *.o
-ishow
-fshow
-bits
+
+1-datalab/ishow
+1-datalab/fshow
+1-datalab/btest
