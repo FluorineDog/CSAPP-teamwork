@@ -172,7 +172,7 @@ NOTES:
  *   Rating: 4
  */
 int absVal(int x) {
-  return 2;
+  return (x^(x>>31)) + ((x>>31)&0x1);
 }
 /* 
  * addOK - Determine if can compute x+y without overflow
@@ -183,7 +183,11 @@ int absVal(int x) {
  *   Rating: 3
  */
 int addOK(int x, int y) {
-  return 2;
+  int a = x >> 31;
+  int b = y >> 31;
+  int c = (x+y) >> 31; 
+  int r = (a^b) | ~(a^c);
+  return r&1;
 }
 /* 
  * allEvenBits - return 1 if all even-numbered bits in word set to 1
@@ -193,7 +197,10 @@ int addOK(int x, int y) {
  *   Rating: 2
  */
 int allEvenBits(int x) {
-  return 2;
+  int z = 0x55;
+  z = (z << 8) | z;
+  z = (z << 16) | z;
+  return !((x&z)^z) ;
 }
 /* 
  * allOddBits - return 1 if all odd-numbered bits in word set to 1
@@ -203,7 +210,10 @@ int allEvenBits(int x) {
  *   Rating: 2
  */
 int allOddBits(int x) {
-  return 2;
+  int z = 0xAA;
+  z = (z << 8) | z;
+  z = (z << 16) | z;
+  return !((x&z)^z) ;
 }
 /* 
  * anyEvenBit - return 1 if any even-numbered bit in word set to 1
@@ -213,7 +223,10 @@ int allOddBits(int x) {
  *   Rating: 2
  */
 int anyEvenBit(int x) {
-  return 2;
+  int z = 0x55;
+  z = (z << 8) | z;
+  z = (z << 16) | z;
+  return !!(x&z);
 }
 /* 
  * anyOddBit - return 1 if any odd-numbered bit in word set to 1
@@ -223,7 +236,10 @@ int anyEvenBit(int x) {
  *   Rating: 2
  */
 int anyOddBit(int x) {
-    return 2;
+  int z = 0xAA;
+  z = (z << 8) | z;
+  z = (z << 16) | z;
+  return !!(x&z);
 }
 /* 
  * bang - Compute !x without using !
@@ -233,7 +249,12 @@ int anyOddBit(int x) {
  *   Rating: 4 
  */
 int bang(int x) {
-  return 2;
+  x = (x >> 16) | x;
+  x = (x >> 8) | x;
+  x = (x >> 4) | x;
+  x = (x >> 2) | x;
+  x = (x >> 1) | x;
+  return (x&1)^1;
 }
 /* 
  * bitAnd - x&y using only ~ and | 
@@ -243,7 +264,7 @@ int bang(int x) {
  *   Rating: 1
  */
 int bitAnd(int x, int y) {
-  return 2;
+  return ~(~x | ~y);
 }
 /*
  * bitCount - returns count of number of 1's in word
@@ -253,12 +274,39 @@ int bitAnd(int x, int y) {
  *   Rating: 4
  */
 int bitCount(int x) {
-  return 2;
+  int k,s,t,f;
+  int sign = x >> 31;
+  
+  f = x^(sign << 31);
+
+  k = 0xAA | 0xAA << 8;
+  s = k | k<<16;
+  t = (f&s);
+  f = (f^t) + (t>>1);
+
+  k = 0xCC | 0xCC << 8;
+  s = k | k<<16;
+  t = (f&s);
+  f = (f^t) + (t>>2);
+
+  k = 0xF0 | 0xF0 << 8;
+  s = k | k<<16;
+  t = (f&s);
+  f = (f^t) + (t>>4);
+
+  k = 0xFF << 8;
+  s = k | k<<16;
+  t = (f&s);
+  f = (f^t) + (t>>8);
+
+  f = ((f >> 16) + f) & 0xFF;
+  return f + (sign&0x1);
+
 }
 /* 
  * bitMask - Generate a mask consisting of all 1's 
  *   lowbit and highbit
- *   Examples: bitMask(5,3) = 0x38
+ *   Examples: bitMask(5,3) = 0x38  // 00111000
  *   Assume 0 <= lowbit <= 31, and 0 <= highbit <= 31
  *   If lowbit > highbit, then mask should be all 0's
  *   Legal ops: ! ~ & ^ | + << >>
@@ -266,7 +314,10 @@ int bitCount(int x) {
  *   Rating: 3
  */
 int bitMask(int highbit, int lowbit) {
-  return 2;
+  int hm = (2 << highbit) + ~1;
+  int lm = (1 << lowbit) + ~1;
+  
+  return hm & (~lm);
 }
 /* 
  * bitNor - ~(x|y) using only ~ and & 
