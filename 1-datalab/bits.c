@@ -412,8 +412,9 @@ int copyLSB(int x) {
  */
 int divpwr2(int x, int n) {
   int f,s;
-  f = ~x+1; // special case handling: 0x80000000
+  f = ~x+1;  // special case handling: 0x80000000
   s = f >> 31;
+  f = ((f+s) >> n) +(~s+1);
   return ~f+1;
 }
 /* 
@@ -440,11 +441,10 @@ int evenBits(void) {
  *   Rating: 3
  */
 int ezThreeFourths(int x) {
-  int f, fn;
+  int mask;
   x = x+x+x;
-  fn = x >> 31;
-  f = ~x+1;
-  return ((x+f)>>2)+fn;
+  mask = (x >> 31) & 3;
+  return (x+mask) >> 2;
 }
 /* 
  * fitsBits - return 1 if x can be represented as an 
@@ -456,7 +456,8 @@ int ezThreeFourths(int x) {
  *   Rating: 2
  */
 int fitsBits(int x, int n) {
-  return 2;
+  n = 33 + (~n);
+  return !(((x<<n)>>n)^x);
 }
 /* 
  * fitsShort - return 1 if x can be represented as a 
@@ -467,7 +468,7 @@ int fitsBits(int x, int n) {
  *   Rating: 1
  */
 int fitsShort(int x) {
-  return 2;
+  return !(x^((x<<16)>>16));
 }
 /* 
  * float_abs - Return bit-level equivalent of absolute value of f for
@@ -481,7 +482,13 @@ int fitsShort(int x) {
  *   Rating: 2
  */
 unsigned float_abs(unsigned uf) {
-  return 2;
+  // unsigned sign = 0x80000000U;
+  unsigned exp  = 0x7F800000U;
+  unsigned frac = 0x007FFFFFU;
+  unsigned NaN = ((uf&exp)==exp) && uf&frac;
+  if (NaN) return uf;
+  else 
+    return uf & 0x7FFFFFFF;
 }
 /* 
  * float_f2i - Return bit-level equivalent of expression (int) f
@@ -496,7 +503,19 @@ unsigned float_abs(unsigned uf) {
  *   Rating: 4
  */
 int float_f2i(unsigned uf) {
-  return 2;
+  unsigned tmp;
+  unsigned base = 0x7f + 23;
+  unsigned sign = 0x80000000U;
+  unsigned exp  = 0x7F800000U;
+  unsigned frac = 0x007FFFFFU;
+  unsigned e = ((uf&exp) >> 23);
+  unsigned res = (uf & frac) + frac + 1;
+  if(e > base+31-24) return sign;
+  if(e < base-1-24) return 0;
+  sign = ~(uf>>31) + 1;
+  if(e >= base) tmp = res << (e-base);
+  else tmp = res >> (base-e);
+  return (tmp^sign) + (sign & 1);
 }
 /* 
  * float_half - Return bit-level equivalent of expression 0.5*f for
@@ -510,7 +529,22 @@ int float_f2i(unsigned uf) {
  *   Rating: 4
  */
 unsigned float_half(unsigned uf) {
-  return 2;
+  unsigned sign = 0x80000000U;
+  unsigned exp  = 0x7F800000U;
+  unsigned frac = 0x007FFFFFU;
+  unsigned special = ((uf&exp)==exp);
+  // unsigned NaN = special && uf&frac;
+  unsigned xp;
+
+  if (special) return uf;
+  xp = uf&exp;
+  if(!xp){
+    uf = (uf&~sign) + uf;    
+    return uf;
+  }
+  uf = uf + 0x00800000;
+  if(xp == exp) uf = uf & ~frac;
+  return uf;
 }
 /* 
  * float_i2f - Return bit-level equivalent of expression (float) x
