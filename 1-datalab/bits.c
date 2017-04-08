@@ -1099,7 +1099,10 @@ int rotateRight(int x, int n) {
  *   Rating: 4
  */
 int satAdd(int x, int y) {
-  return 2;
+  int z = x+y;
+  int fix = ((z^x)&(z^y))>>31;
+  int target = (1<<31) + (z>>31);
+  return (~fix&z) + (fix&target);
 }
 /*
  * satMul2 - multiplies by 2, saturating to Tmin or Tmax if overflow
@@ -1111,7 +1114,11 @@ int satAdd(int x, int y) {
  *   Rating: 3
  */
 int satMul2(int x) {
-  return 2;
+  int y = x;
+  int z = x+y;
+  int fix = ((z^x)&(z^y))>>31;
+  int target = (1<<31) + (z>>31);
+  return (~fix&z) + (fix&target);
 }
 /*
  * satMul3 - multiplies by 3, saturating to Tmin or Tmax if overflow
@@ -1125,7 +1132,13 @@ int satMul2(int x) {
  *  Rating: 3
  */
 int satMul3(int x) {
-    return 2;
+  int sign = (x >> 31)&1;
+  int sp = ~(1 << 31) ;
+  int y = x+x+x;
+  int xs = x >> 3;
+  int ys = xs + xs + xs;
+  int mask = ~!(((y>>3) + ~ys + 0xF)&~0x1F) + 1;
+  return (mask&y) | (~mask & (sp + sign));  
 }
 /* 
  * sign - return 1 if positive, 0 if zero, and -1 if negative
@@ -1136,7 +1149,7 @@ int satMul3(int x) {
  *  Rating: 2
  */
 int sign(int x) {
-    return 2;
+    return (!x + ~0) & (((x>>31)<<1) +1);
 }
 /* 
  * sm2tc - Convert from sign-magnitude to two's complement
@@ -1147,7 +1160,8 @@ int sign(int x) {
  *   Rating: 4
  */
 int sm2tc(int x) {
-  return 2;
+  int sign = x >> 31;
+  return (x^sign) + (sign << 31) + (1&sign);
 }
 /* 
  * subOK - Determine if can compute x-y without overflow
@@ -1158,7 +1172,15 @@ int sm2tc(int x) {
  *   Rating: 3
  */
 int subOK(int x, int y) {
-  return 2;
+  // x - y  = z
+  // x = y + z
+  int a, b, c, r;
+  x = x + ~y + 1;
+  a = x >> 31;
+  b = y >> 31;
+  c = (x+y) >> 31; 
+  r = (a^b) | ~(a^c);
+  return r&1;
 }
 /* 
  * tc2sm - Convert from two's complement to sign-magnitude 
@@ -1170,7 +1192,8 @@ int subOK(int x, int y) {
  *   Rating: 4
  */
 int tc2sm(int x) {
-  return 2;
+  int sign = x >> 31;
+  return (x^sign) + (sign << 31) + (1&sign);
 }
 /* 
  * thirdBits - return word with every third bit (starting from the LSB) set to 1
@@ -1179,7 +1202,10 @@ int tc2sm(int x) {
  *   Rating: 1
  */
 int thirdBits(void) {
-  return 2;
+  int f = 0x49;
+  f = (f << 9) | f;
+  f = (f << 18)| f;
+  return f;
 }
 /* 
  * TMax - return maximum two's complement integer 
@@ -1188,7 +1214,7 @@ int thirdBits(void) {
  *   Rating: 1
  */
 int tmax(void) {
-  return 2;
+  return ~(1<<31);
 }
 /* 
  * tmin - return minimum two's complement integer 
@@ -1197,7 +1223,7 @@ int tmax(void) {
  *   Rating: 1
  */
 int tmin(void) {
-  return 2;
+  return 1<<31;
 }
 /*
  * trueFiveEighths - multiplies by 5/8 rounding toward 0,
