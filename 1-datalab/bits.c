@@ -954,7 +954,9 @@ int leftBitCount(int x) {
  *   Rating: 4 
  */
 int logicalNeg(int x) {
-  return 2;
+  int a = x;
+  int b = x+~0;
+  return ~((a|~b)>>31) & 1;
 }
 /* 
  * logicalShift - shift x to the right by n, using a logical shift
@@ -965,7 +967,11 @@ int logicalNeg(int x) {
  *   Rating: 3 
  */
 int logicalShift(int x, int n) {
-  return 2;
+  int sign  = 1 << 31;
+  sign  = x & sign;
+  sign = (sign>>n) << 1;
+  x = (x >> n) ^ sign;
+  return x;
 }
 /* 
  * minusOne - return a value of -1 
@@ -974,7 +980,7 @@ int logicalShift(int x, int n) {
  *   Rating: 1
  */
 int minusOne(void) {
-  return 2;
+  return ~0;
 }
 /*
  * multFiveEighths - multiplies by 5/8 rounding toward 0.
@@ -988,7 +994,10 @@ int minusOne(void) {
  *   Rating: 3
  */
 int multFiveEighths(int x) {
-  return 2;
+  int mask;
+  x = (x<<2)+x;
+  mask = (x >> 31) & 7;
+  return (x+mask) >> 3;
 }
 /* 
  * negate - return -x 
@@ -998,7 +1007,7 @@ int multFiveEighths(int x) {
  *   Rating: 2
  */
 int negate(int x) {
-  return 2;
+  return ~x + 1;
 }
 /* 
  * oddBits - return word with all odd-numbered bits set to 1
@@ -1007,7 +1016,10 @@ int negate(int x) {
  *   Rating: 2
  */
 int oddBits(void) {
-  return 2;
+  int f = 0xaa;
+  f = f | (f << 8);
+  f = f | (f << 16);
+  return f;
 }
 /* 
  * rempwr2 - Compute x%(2^n), for 0 <= n <= 30
@@ -1018,7 +1030,12 @@ int oddBits(void) {
  *   Rating: 3
  */
 int rempwr2(int x, int n) {
-    return 2;
+  int f,s,d;
+  f = ~x+1;  // special case handling: 0x80000000
+  s = f >> 31;
+  f = ((f+s) >> n) +(~s+1);
+  d = ~f+1;
+  return x + ~(d<<n) + 1;
 }
 /* 
  * replaceByte(x,n,c) - Replace byte n in x with c
@@ -1030,7 +1047,10 @@ int rempwr2(int x, int n) {
  *   Rating: 3
  */
 int replaceByte(int x, int n, int c) {
-  return 2;
+  int tmp;
+  n = n <<3;
+  tmp =  ((x >> n)^c) & 0xff;
+  return x ^ (tmp << n);
 }
 /* 
  * rotateLeft - Rotate x to the left by n
@@ -1041,7 +1061,13 @@ int replaceByte(int x, int n, int c) {
  *   Rating: 3 
  */
 int rotateLeft(int x, int n) {
-  return 2;
+  int sign = 1 << 31;
+  int n2 = 32 + ~n;
+  int x2 = (x >> n2)>>1;
+  sign = x&sign;
+
+  sign = (sign>>n2);
+  return sign^( x << n)^x2;
 }
 /* 
  * rotateRight - Rotate x to the right by n
@@ -1052,7 +1078,15 @@ int rotateLeft(int x, int n) {
  *   Rating: 3 
  */
 int rotateRight(int x, int n) {
-  return 2;
+  int sign, n2, x2;
+  n = 33+~n;
+  sign = 1 << 31;
+  n2 = 32 + ~n;
+  x2 = (x >> n2)>>1;
+  sign = x&sign;
+
+  sign = (sign>>n2);
+  return sign^( x << n)^x2;
 }
 /*
  * satAdd - adds two numbers but when positive overflow occurs, returns
