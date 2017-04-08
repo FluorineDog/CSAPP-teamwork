@@ -1237,7 +1237,15 @@ int tmin(void) {
  */
 int trueFiveEighths(int x)
 {
-    return 2;
+  int y, tail, sign;
+  tail = x&0x7;
+  x = x^tail;
+  sign = x >> 31;
+  tail = (tail<<2) + tail;
+  tail = tail + (sign & 7);
+  tail = tail >> 3;
+  y = (x>>1) + (x>>3) + tail;
+  return y;
 }
 /*
  * trueThreeFourths - multiplies by 3/4 rounding toward 0,
@@ -1250,8 +1258,16 @@ int trueFiveEighths(int x)
  *   Rating: 4
  */
 int trueThreeFourths(int x)
-{
-  return 2;
+{ 
+  int y, tail, sign;
+  tail = x&0x3;
+  x = x^tail;
+  sign = x >> 31;
+  tail = (tail<<1) + tail;
+  tail = tail + (sign & 3);
+  tail = tail >> 2;
+  y = (x>>1) + (x>>2) + tail;
+  return y;
 }
 /* 
  * upperBits - pads n upper bits with 1's
@@ -1262,5 +1278,7 @@ int trueThreeFourths(int x)
  *  Rating: 1
  */
 int upperBits(int n) {
-  return 2;
+  int f = 1 << 31;
+  f = f >> (n + ~0);
+  return ~(1 + ~!n) & f;
 }
