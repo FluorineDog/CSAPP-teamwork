@@ -856,7 +856,8 @@ int isPositive(int x) {
  *   Rating: 4
  */
 int isPower2(int x) {
-  return 2;
+  int f = x & (x+~0);
+  return (!f) & !!(x<<1);
 }
 /*
  * isTmax - returns 1 if x is the maximum, two's complement number,
@@ -866,7 +867,12 @@ int isPower2(int x) {
  *   Rating: 1
  */
 int isTmax(int x) {
-  return 2;
+  // x+1 = 1000
+  // x   = 0111
+  // 
+  int a = !(x+x+2);
+  int b = !!(x+1);
+  return a&b;
 }
 /*
  * isTmin - returns 1 if x is the minimum, two's complement number,
@@ -876,7 +882,11 @@ int isTmax(int x) {
  *   Rating: 1
  */
 int isTmin(int x) {
-  return 2;
+  int a, b;
+  x = x+~0;
+  a = !(x+x+2);
+  b = !!(x+1);
+  return a&b;
 }
 /*
  * isZero - returns 1 if x == 0, and 0 otherwise 
@@ -886,7 +896,7 @@ int isTmin(int x) {
  *   Rating: 1
  */
 int isZero(int x) {
-  return 2;
+  return !x;
 }
 /* 
  * leastBitPos - return a mask that marks the position of the
@@ -897,7 +907,8 @@ int isZero(int x) {
  *   Rating: 2 
  */
 int leastBitPos(int x) {
-  return 2;
+  int f = x+~0;
+  return (f^x)&x;
 }
 /*
  * leftBitCount - returns count of number of consective 1's in
@@ -908,7 +919,31 @@ int leastBitPos(int x) {
  *   Rating: 4
  */
 int leftBitCount(int x) {
-  return 2;
+  int f;
+  int count = 0;
+  int x0 = x;
+  int base = ~0;
+  f = (base+!( (x >> 15)^base ));
+  count = count + (f&16);
+  x = x0 >> count;
+
+  f = (base+!( (x >> 7)^base ));
+  count = count + (f&8);
+  x = x0 >> count;
+
+  f = (base+!( (x >> 3)^base ));
+  count = count + (f&4);
+  x = x0 >> count;
+
+  f = (base+!( (x >> 1)^base ));
+  count = count + (f&2);
+  x = x0 >> count;
+
+  f = (base+!( (x >> 0)^base ));
+  count = count + (f&1);
+  x = x0 >> count;
+  return (33 + ~count) & (x>>31);
+
 }
 /* 
  * logicalNeg - implement the ! operator, using all of 
