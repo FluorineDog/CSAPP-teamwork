@@ -19,8 +19,10 @@
  *
  * STEP 1: Read the following instructions carefully.
  */
+
 You will provide your solution to the Data Lab by
 editing the collection of functions in this source file.
+
 INTEGER CODING RULES:
  
   Replace the "return" statement in each function with one
@@ -32,11 +34,13 @@ INTEGER CODING RULES:
       int var1 = Expr1;
       ...
       int varM = ExprM;
+
       varJ = ExprJ;
       ...
       varN = ExprN;
       return ExprR;
   }
+
   Each "Expr" is an expression using ONLY the following:
   1. Integer constants 0 through 255 (0xFF), inclusive. You are
       not allowed to use big constants such as 0xffffffff.
@@ -47,6 +51,7 @@ INTEGER CODING RULES:
   Some of the problems restrict the set of allowed operators even further.
   Each "Expr" may consist of multiple operators. You are not restricted to
   one operator per line.
+
   You are expressly forbidden to:
   1. Use any control constructs such as if, do, while, for, switch, etc.
   2. Define or use any macros.
@@ -56,12 +61,14 @@ INTEGER CODING RULES:
   6. Use any form of casting.
   7. Use any data type other than int.  This implies that you
      cannot use arrays, structs, or unions.
+
  
   You may assume that your machine:
   1. Uses 2s complement, 32-bit representations of integers.
   2. Performs right shifts arithmetically.
   3. Has unpredictable behavior when shifting an integer by more
      than the word size.
+
 EXAMPLES OF ACCEPTABLE CODING STYLE:
   /*
    * pow2plus1 - returns 2^x + 1, where 0 <= x <= 31
@@ -70,6 +77,7 @@ EXAMPLES OF ACCEPTABLE CODING STYLE:
      /* exploit ability of shifts to compute powers of 2 */
      return (1 << x) + 1;
   }
+
   /*
    * pow2plus4 - returns 2^x + 4, where 0 <= x <= 31
    */
@@ -79,11 +87,14 @@ EXAMPLES OF ACCEPTABLE CODING STYLE:
      result += 4;
      return result;
   }
+
 FLOATING POINT CODING RULES
+
 For the problems that require you to implent floating-point operations,
 the coding rules are less strict.  You are allowed to use looping and
 conditional control.  You are allowed to use both ints and unsigneds.
 You can use arbitrary integer and unsigned constants.
+
 You are expressly forbidden to:
   1. Define or use any macros.
   2. Define any additional functions in this file.
@@ -92,6 +103,8 @@ You are expressly forbidden to:
   5. Use any data type other than int or unsigned.  This means that you
      cannot use arrays, structs, or unions.
   6. Use any floating point data types, operations, or constants.
+
+
 NOTES:
   1. Use the dlc (data lab checker) compiler (described in the handout) to 
      check the legality of your solutions.
@@ -105,6 +118,7 @@ NOTES:
      header comment for each function. If there are any inconsistencies 
      between the maximum ops in the writeup and in this file, consider
      this file the authoritative source.
+
 /*
  * STEP 2: Modify the following functions according the coding rules.
  * 
@@ -114,17 +128,22 @@ NOTES:
  *   2. Use the BDD checker to formally verify that your solutions produce 
  *      the correct answers.
  */
+
+
 #endif
 /* Copyright (C) 1991-2016 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
+
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
    version 2.1 of the License, or (at your option) any later version.
+
    The GNU C Library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details.
+
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
@@ -167,11 +186,10 @@ int absVal(int x) {
  *   Rating: 3
  */
 int addOK(int x, int y) {
-   int sum = x+y;
+  int sum = x+y;
   int x_neg = x>>31;
   int y_neg = y>>31;
   int s_neg = sum>>31;
-  /* Overflow iff x and y have same sign, but s is different */
   return !(~(x_neg ^ y_neg) & (x_neg ^ s_neg));
 }
 /* 
@@ -269,8 +287,9 @@ int bitCount(int x) {
  *   Rating: 3
  */
 int bitMask(int highbit, int lowbit) {
-  int diff = highbit + ~lowbit + 1;
-  return (((1<<highbit)|(1<<lowbit))&((((!(diff>>31))<<31)>>31)|(((!diff)<<31)>>31)));
+  int high = ((1 <<31) >> (32 + ~highbit)) << 1;
+  int low = (1 << 31) >> (32 + ~lowbit);
+  return ~high&low;
 }
 /* 
  * bitNor - ~(x|y) using only ~ and & 
@@ -326,7 +345,9 @@ int bitXor(int x, int y) {
  *  Rating: 2
  */
 int byteSwap(int x, int n, int m) {
-    return 2;
+    int m_getter = 0xff << (m << 3);
+    int n_getter = 0xff << (n << 3);
+    return x&(~(m_getter|n_getter))|((((x&m_getter)>>(m<<3))&0xff)<<(n<<3))|((((x&n_getter)>>(n<<3))&0xff)<<(m<<3));
 }
 /* 
  * conditional - same as x ? y : z 
@@ -336,7 +357,9 @@ int byteSwap(int x, int n, int m) {
  *   Rating: 3
  */
 int conditional(int x, int y, int z) {
-  return 2;
+   int notx = !x;
+   int mask = notx + ~0;
+   return (y & mask) | (z & ~mask);
 }
 /* 
  * copyLSB - set all bits of result to least significant bit of x
@@ -527,7 +550,7 @@ int greatestBitPos(int x) {
  *  Rating: 4
  */
 int howManyBits(int x) {
-  return 0;
+  return 2;
 }
 /*
  * ilog2 - return floor(log base 2 of x), where x > 0
@@ -562,7 +585,7 @@ int implication(int x, int y) {
  */
 int isAsciiDigit(int x) {
   int neg = ~x+1;
-  return (!((neg+0x30)>>31))&(!((0x39+neg)>>31));
+  return (!((x+~0x30+1)>>31))&(!((0x39+neg)>>31));
 }
 /* 
  * isEqual - return 1 if x == y, and 0 otherwise 
@@ -582,7 +605,10 @@ int isEqual(int x, int y) {
  *   Rating: 3
  */
 int isGreater(int x, int y) {
-  return (!((x+~y+1)>>31))&(!(x+~y+1));
+  int diff = x+(~y+1);
+  int xneg = x>>31;
+  int yneg = y>>31;
+  return (((!xneg)&yneg)|(xneg&yneg&(!(diff>>31)))|(!xneg&!yneg&(!(diff>>31))))&(!!diff);
 }
 /* 
  * isLess - if x < y  then return 1, else return 0 
@@ -639,7 +665,7 @@ int isNonNegative(int x) {
  *   Rating: 4 
  */
 int isNonZero(int x) {
-  return (~((x|(~x+1))>>31))&1;
+  return ((x|(~x+1))>>31)&1;
 }
 /* 
  * isNotEqual - return 0 if x == y, and 1 otherwise 
@@ -800,7 +826,9 @@ int oddBits(void) {
  *   Rating: 3
  */
 int rempwr2(int x, int n) {
-    return 2;
+    int xneg = x >> 31;
+    int quot = (x>>n)+(xneg&(!(!n))&(!(!(x<<(33+(~n))))));
+    return x + ((~quot + 1)<<n);
 }
 /* 
  * replaceByte(x,n,c) - Replace byte n in x with c
@@ -812,7 +840,7 @@ int rempwr2(int x, int n) {
  *   Rating: 3
  */
 int replaceByte(int x, int n, int c) {
-  return 2;
+  return (x&(~(0xff<<(n<<3))))|(c<<(n<<3));
 }
 /* 
  * rotateLeft - Rotate x to the left by n
@@ -890,7 +918,8 @@ int satMul3(int x) {
  *  Rating: 2
  */
 int sign(int x) {
-    return 2;
+    int m = ~((x >> 31)&1);
+    return (m+m+3)&((!!x)<<31)>>31;
 }
 /* 
  * sm2tc - Convert from sign-magnitude to two's complement
@@ -901,7 +930,9 @@ int sign(int x) {
  *   Rating: 4
  */
 int sm2tc(int x) {
-  return 2;
+  int mask = x >> 31;
+  int conv = ~(x&(~(1 << 31)))+1;
+  return (mask)&conv|(~mask)&x;
 }
 /* 
  * subOK - Determine if can compute x-y without overflow
@@ -912,7 +943,11 @@ int sm2tc(int x) {
  *   Rating: 3
  */
 int subOK(int x, int y) {
-  return 2;
+  int diff = x+~y+1;
+  int x_neg = x>>31;
+  int y_neg = y>>31;
+  int d_neg = diff>>31;
+  return !(x_neg&(!y_neg)&(!d_neg)|(!x_neg)&y_neg&d_neg);
 }
 /* 
  * tc2sm - Convert from two's complement to sign-magnitude 
@@ -924,7 +959,9 @@ int subOK(int x, int y) {
  *   Rating: 4
  */
 int tc2sm(int x) {
-  return 2;
+  int mask = x >> 31;
+  int conv = (~x + 1) | (1 << 31);
+  return (mask&conv)|((~mask)&x);
 }
 /* 
  * thirdBits - return word with every third bit (starting from the LSB) set to 1
@@ -933,7 +970,9 @@ int tc2sm(int x) {
  *   Rating: 1
  */
 int thirdBits(void) {
-  return 2;
+  int bits9 = 0x49;
+  int bits18 = bits9 | (bits9<<9);
+  return bits18 | (bits18<<18);
 }
 /* 
  * TMax - return maximum two's complement integer 
