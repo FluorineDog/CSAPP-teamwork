@@ -512,30 +512,25 @@ unsigned float_half(unsigned uf) {
  *   Rating: 4
  */
 unsigned float_i2f(int x) {
-    unsigned s, e, f, p, q;
+    unsigned s, e, p, y;
     if (!x)
         return 0;
     s = x >> 31;
-    p = (x + s) ^ s;
-    f = 127;
-    while (!(p & 1)) {
-        ++f;
-        p >>= 1;
+    y = (x + s) ^ s;
+    e = 31;
+    while (!(y >> e))
+        --e;
+    if (e <= 23)
+        p = y << (23 - e);
+    else {
+        p = y >> (e - 23);
+        if ((y >> (e - 24) & 1) && ((y << (55 - e) << 1) || p & 1))  {
+            ++p;
+            if (!(p << 9))
+                ++e;
+        }
     }
-    e = 0;
-    while ((1 << e) <= p)
-        ++e;
-    --e;
-    q = p << (32 - e);
-    p = q >> 8;
-    q = (p << 8) == q ? p >> 1 : 1;
-    p = (p + (q & p & 1)) >> 1;
-    q = 1 << 23;
-    if (p & q) {
-        ++e;
-        p ^= q;
-    }
-    return s << 31 | (e + f) << 23 | p;
+    return s << 31 | (e + 127) << 23 | p << 9 >> 9;
 }
 /* 
  * float_neg - Return bit-level equivalent of expression -f for
